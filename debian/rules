@@ -1,0 +1,60 @@
+#!/usr/bin/make -f
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DELTA_VERSION := $(shell dpkg-parsechangelog -S Version | sed 's/[-~].*//')
+DELTA_RELEASE := git-delta_$(DELTA_VERSION)_$(DEB_HOST_ARCH)
+
+# Runtime libraries of upstream's binaries, measured per arch (see
+# build_debian.sh): the glibc floor differs and only amd64 links zlib.
+ifeq ($(DEB_HOST_ARCH),amd64)
+DELTA_DEPENDS := libc6 (>= 2.34), libgcc-s1, zlib1g (>= 1:1.1.4)
+else ifeq ($(DEB_HOST_ARCH),arm64)
+DELTA_DEPENDS := libc6 (>= 2.18), libgcc-s1
+else ifeq ($(DEB_HOST_ARCH),armhf)
+DELTA_DEPENDS := libc6 (>= 2.16), libgcc-s1
+else
+DELTA_DEPENDS := libc6 (>= 2.39), libgcc-s1
+endif
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+
+override_dh_auto_build:
+	@case "$(DEB_HOST_ARCH)" in \
+		amd64|arm64|armhf|i386) ;; \
+		*) echo "Unsupported architecture: $(DEB_HOST_ARCH)"; exit 1 ;; \
+	esac; \
+	echo "Downloading $(DELTA_RELEASE).deb..."; \
+	wget -q "https://github.com/dandavison/delta/releases/download/$(DELTA_VERSION)/$(DELTA_RELEASE).deb"; \
+	dpkg-deb -x "$(DELTA_RELEASE).deb" "$(DELTA_RELEASE)"; \
+	rm -f "$(DELTA_RELEASE).deb"; \
+	[ -f "$(DELTA_RELEASE)/usr/bin/delta" ] || { echo "Unexpected package layout: $(DELTA_RELEASE)/usr/bin/delta not found"; exit 1; }
+
+# The binary comes from upstream's .deb; the completions and themes.gitconfig
+# from this source tree (the orig tarball is upstream's source at the tag).
+override_dh_auto_install:
+	install -D -m 755 "$(DELTA_RELEASE)/usr/bin/delta" debian/git-delta/usr/bin/delta
+	install -D -m 644 etc/completion/completion.bash debian/git-delta/usr/share/bash-completion/completions/delta
+	install -D -m 644 etc/completion/completion.zsh debian/git-delta/usr/share/zsh/vendor-completions/_delta
+	install -D -m 644 etc/completion/completion.fish debian/git-delta/usr/share/fish/vendor_completions.d/delta.fish
+	install -D -m 644 themes.gitconfig debian/git-delta/etc/delta/themes.gitconfig
+	install -d -m 755 debian/git-delta/usr/share/delta
+	ln -s /etc/delta/themes.gitconfig debian/git-delta/usr/share/delta/themes.gitconfig
+
+override_dh_auto_test:
+
+override_dh_auto_clean:
+	rm -rf git-delta_*_amd64 git-delta_*_arm64 git-delta_*_armhf git-delta_*_i386 git-delta_*.deb || true
+
+override_dh_gencontrol:
+	dh_gencontrol -- -Vdelta:Depends="$(DELTA_DEPENDS)"
+
+# Prebuilt upstream binary: keep it as shipped
+override_dh_strip:
+
+override_dh_dwz:
+
+override_dh_shlibdeps:
+
+override_dh_makeshlibs:

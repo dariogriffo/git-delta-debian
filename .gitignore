@@ -1,0 +1,22 @@
+# .deb Packages
+*.deb
+
+# Source packages
+*.dsc
+*.orig.tar.gz
+*.debian.tar.xz
+
+# Downloaded / extracted upstream release artifacts
+git-delta_*_amd64/
+git-delta_*_arm64/
+git-delta_*_armhf/
+git-delta_*_i386/
+git-delta-*/
+delta-*/
+/usr/
+/DEBIAN/
+/etc/
+
+.idea/*
+.DS_Store
+/t/

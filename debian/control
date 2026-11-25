@@ -1,0 +1,24 @@
+Source: git-delta
+Section: vcs
+Priority: optional
+Maintainer: Dario Griffo <dariogriffo@gmail.com>
+Build-Depends: debhelper-compat (= 13), wget, ca-certificates
+Standards-Version: 4.6.2
+Homepage: https://dandavison.github.io/delta/
+Rules-Requires-Root: no
+
+Package: git-delta
+Architecture: amd64 arm64 armhf i386
+Depends: ${misc:Depends}, ${delta:Depends}
+Recommends: git, less
+Suggests: bash-completion
+Description: syntax-highlighting pager for git, diff and grep output
+ Delta is a syntax-highlighting pager for git, diff, grep and blame output.
+ It adds language syntax highlighting, within-line insertion and deletion
+ detection, line numbers, side-by-side view and hyperlinks to the output of
+ git diff, git show, git log -p, git blame and git grep.
+ .
+ The command is delta. Set it as git's pager (core.pager = delta,
+ interactive.diffFilter = delta --color-only) to use it with git. Shell
+ completions for bash, zsh and fish are included, and the themes.gitconfig
+ helper is installed in /etc/delta, as in Debian's own package.
